@@ -10,6 +10,15 @@ body {
   align-items: center;
 }
 
+.container {
+  margin-left: 40px;
+}
+
+.score {
+  color: darkmagenta;
+  font-size: 1.5rem;
+}
+
 .grid {
   background: pink;
   padding: 0.5vh;
