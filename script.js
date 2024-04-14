@@ -40,6 +40,9 @@ const TETROMINOES = {
   ],
 };
 
+const btnRestart = document.querySelector(".btn-restart");
+const scoreElement = document.querySelector(".score");
+
 function convertPositionToIndex(row, column) {
   return row * PLAYFIELD_COLUMNS + column;
 }
@@ -51,6 +54,25 @@ function getRandomElement(array) {
 
 let playfield;
 let tetromino;
+let score = 0;
+
+function countScore(destroyRows) {
+  switch (destroyRows) {
+    case 1:
+      score += 10;
+      break;
+    case 2:
+      score += 20;
+      break;
+    case 3:
+      score += 50;
+      break;
+    case 4:
+      score += 100;
+      break;
+  }
+  scoreElement.innerHTML = score;
+}
 
 function generatePlayField() {
   for (let i = 0; i < PLAYFIELD_ROWS * PLAYFIELD_COLUMNS; i++) {
@@ -81,14 +103,50 @@ function placeTetromino() {
   const matrixSize = tetromino.matrix.length;
   for (let row = 0; row < matrixSize; row++) {
     for (let column = 0; column < matrixSize; column++) {
+      if (isOutsideOfTopboard(row)) {
+        isGameOver = true;
+        return;
+      }
       if (tetromino.matrix[row][column]) {
         playfield[tetromino.row + row][tetromino.column + column] =
           tetromino.name;
       }
     }
   }
-
+  const filledRows = findFilledRows();
+  removeFillRows(filledRows);
   generateTetromino();
+  countScore(filledRows.length);
+}
+
+function removeFillRows(filledRows) {
+  for (let i = 0; i < filledRows.length; i++) {
+    const row = filledRows[i];
+    dropRowsAbove(row);
+  }
+}
+
+function dropRowsAbove() {
+  for (let row = rowDelete; row > 0; row--) {
+    playfield[row] = playfield[row - 1];
+  }
+  playfield[0] = new Array(PLAYFIELD_COLUMNS).fill(0);
+}
+
+function findFilledRows() {
+  const fillRows = [];
+  for (let row = 0; row < PLAYFIELD_ROWS; row++) {
+    let filledColumns = 0;
+    for (let column = 0; column < PLAYFIELD_COLUMNS; column++) {
+      if (playfield[row][column] != 0) {
+        filledColumns++;
+      }
+    }
+    if (PLAYFIELD_COLUMNS === filledColumns) {
+      fillRows.push(row);
+    }
+  }
+  return fillRows;
 }
 
 generatePlayField();
@@ -150,23 +208,39 @@ function rotate() {
 
 document.addEventListener("keydown", onKeyDown);
 function onKeyDown(e) {
-  switch (e.key) {
-    case "ArrowUp":
-      rotate();
-      break;
-    case "ArrowDown":
-      moveTetrominoDown();
-      break;
-    case "ArrowLeft":
-      moveTetrominoLeft();
-      break;
-    case "ArrowRight":
-      moveTetrominoRight();
-      break;
+  console.log(e.key);
+  if (e.key == "Escape") {
+    togglePauseGame();
   }
-
+  if (!isPaused) {
+    switch (e.key) {
+      case " ":
+        dropTetrominoDown();
+        break;
+      case "ArrowUp":
+        rotate();
+        break;
+      case "ArrowDown":
+        moveTetrominoDown();
+        break;
+      case "ArrowLeft":
+        moveTetrominoLeft();
+        break;
+      case "ArrowRight":
+        moveTetrominoRight();
+        break;
+    }
+  }
   draw();
 }
+
+function dropTetrominoDown() {
+  while (isValid()) {
+    tetromino.row++;
+  }
+  tetromino.row--;
+}
+
 function rotateMatrix(matrixTetromino) {
   const N = matrixTetromino.length;
   const rotateMatrix = [];
@@ -199,25 +273,50 @@ function moveTetrominoRight() {
   }
 }
 
-let timedId = null;
-
 function moveDown() {
   moveTetrominoDown();
   draw();
   stopLoop();
   startLoop();
+  if (isGameOver) {
+    gameOver();
+  }
 }
 
+let isGameOver = false;
+let timedId = null;
+const overlay = document.querySelector(".overlay");
+
+function gameOver() {
+  stopLoop();
+  overlay.style.display = "flex";
+}
+// gameOver();
 moveDown();
 
 function startLoop() {
-  setTimeout(() => {
-    timedId = requestAnimationFrame(moveDown);
-  }, 700);
+  if (!timedId) {
+    timedId = setTimeout(() => {
+      requestAnimationFrame(moveDown);
+    }, 700);
+  }
 }
 function stopLoop() {
   cancelAnimationFrame(timedId);
-  timedId = clearTimeout(timedId);
+  clearTimeout(timedId);
+
+  timedId = null;
+}
+
+let isPaused = false;
+
+function togglePauseGame() {
+  if (isPaused === false) {
+    stopLoop();
+  } else {
+    startLoop();
+  }
+  isPaused = !isPaused;
 }
 
 function isValid() {
