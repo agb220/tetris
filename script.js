@@ -1,5 +1,11 @@
 const PLAYFIELD_COLUMNS = 10;
 const PLAYFIELD_ROWS = 20;
+const overlay = document.querySelector(".overlay");
+let isGameOver = false;
+let timedId = null;
+let playfield;
+let tetromino;
+let score = 0;
 const TETROMINO_NAMES = ["O", "J", "L", "I", "S", "T", "Z"];
 
 const TETROMINOES = {
@@ -43,18 +49,34 @@ const TETROMINOES = {
 const btnRestart = document.querySelector(".btn-restart");
 const scoreElement = document.querySelector(".score");
 
-function convertPositionToIndex(row, column) {
-  return row * PLAYFIELD_COLUMNS + column;
+let cells;
+init();
+
+function init() {
+  score = 0;
+  scoreElement.innerHTML = 0;
+  isGameOver = false;
+  generatePlayField();
+  generateTetromino();
+  cells = document.querySelectorAll(".grid div");
+  moveDown();
 }
+
+btnRestart.addEventListener("click", function () {
+  console.log("click");
+  document.querySelector(".grid").innerHTML = "";
+  overlay.style.display = "none";
+  init();
+});
 
 function getRandomElement(array) {
   const randomIndex = Math.floor(Math.random() * array.length);
   return array[randomIndex];
 }
 
-let playfield;
-let tetromino;
-let score = 0;
+function convertPositionToIndex(row, column) {
+  return row * PLAYFIELD_COLUMNS + column;
+}
 
 function countScore(destroyRows) {
   switch (destroyRows) {
@@ -116,6 +138,7 @@ function placeTetromino() {
   const filledRows = findFilledRows();
   removeFillRows(filledRows);
   generateTetromino();
+
   countScore(filledRows.length);
 }
 
@@ -126,7 +149,7 @@ function removeFillRows(filledRows) {
   }
 }
 
-function dropRowsAbove() {
+function dropRowsAbove(rowDelete) {
   for (let row = rowDelete; row > 0; row--) {
     playfield[row] = playfield[row - 1];
   }
@@ -148,10 +171,6 @@ function findFilledRows() {
   }
   return fillRows;
 }
-
-generatePlayField();
-generateTetromino();
-const cells = document.querySelectorAll(".grid div");
 
 function drawPlayField() {
   for (let row = 0; row < PLAYFIELD_ROWS; row++) {
@@ -282,10 +301,6 @@ function moveDown() {
     gameOver();
   }
 }
-
-let isGameOver = false;
-let timedId = null;
-const overlay = document.querySelector(".overlay");
 
 function gameOver() {
   stopLoop();
